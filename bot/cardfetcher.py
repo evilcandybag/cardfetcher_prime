@@ -118,28 +118,53 @@ def emojiFilter(indata):
 
     return ret
 
+def parseCardTags(str):
+    bangTrigger = "!card "
+    cardTagOpen = "[["
+    cardTagEnd = "]]"
+
+    triggerIndex = str.find(bangTrigger)
+    if triggerIndex > -1:
+        return [str[triggerIndex + len(bangTrigger):]]
+    
+    allTags = []
+    while True:
+        tagOpenIndex = str.find(cardTagOpen)
+        tagEndIndex = str.find(cardTagEnd)
+        if tagOpenIndex > -1 && tagEndIndex > -1 && tagEndIndex > tagOpenIndex:
+            allTags.append(str[tagOpenIndex + len(cardTagOpen):tagEndIndex])
+        else:
+            break
+    return allTags
+
+
 def parseForCardInput(sc, indata):
     if indata.has_key("text"):
         userinput = indata["text"].lower()
 
-        cardTrigger = "!card "
         attachments = ""
         text = ""
         notFound = "No results found"
 
-        if userinput.find(cardTrigger) > -1:
-            searchTerm = userinput[userinput.find(cardTrigger) + len(cardTrigger):]
-            card = getCard(searchTerm)
-            if not card:
-                text += notFound
-            else:
-                mostRecentPrinting = card["editions"][0]
-                valueinfo = ""
-                if card["value"] > 0:
-                    valueinfo = "\n\nCurrent market price for most recent printing (%s) $%.1f" % (mostRecentPrinting["set"], card["value"])
+        allTags = parseCardTags(userinput)
 
-                attachments += '[{"image_url":"%s","title":"%s"}]' % (mostRecentPrinting["image_url"], card["name"].replace("\"", "\\\""))
-                text += valueinfo
+        if len(allTags) > 0:
+            tempText = ""
+            tempAttachments = []
+            for searchTerm in allTags:
+                card = getCard(searchTerm)
+                if not card:
+                    tempText += "No result for %s\n" % searchTerm
+                else:
+                    mostRecentPrinting = card["editions"][0]
+                    header = "Latest printing for %s is %s\n" % (card["name"], mostRecentPrinting["set"])
+                    tempAttachments.append('{"image_url":"%s","title":"%s"}' 
+                      % (mostRecentPrinting["image_url"], card["name"].replace("\"", "\\\"")))
+                    tempText += header
+            
+            text += tempText
+            attachments += "[%s]" % (",".join(tempAttachments))
+            
 
         oracleTrigger = "!oracle "
         if userinput.find(oracleTrigger) > -1:
