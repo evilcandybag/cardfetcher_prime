@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
+
 import json
 import logging
 import re
+import cardfetcher
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +39,8 @@ class RtmEventHandler(object):
     def _handle_message(self, event):
         # Filter out messages from the bot itself, and from non-users (eg. webhooks)
         if ('user' in event) and (not self.clients.is_message_from_me(event['user'])):
+            
+            cardfetcher.parseForCardInput(event)
 
             msg_txt = event['text']
 
