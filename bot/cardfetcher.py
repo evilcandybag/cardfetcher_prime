@@ -209,7 +209,7 @@ def parseForCardInput(sc, indata):
             text += answer
 
         if text or attachments:
-            sc.api_call(
+            sc.rtm.api_call(
                 "chat.postMessage",
                 channel=indata["channel"],
                 attachments=attachments,
