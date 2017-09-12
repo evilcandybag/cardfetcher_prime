@@ -135,7 +135,7 @@ def parseCardTags(str):
         tagEndIndex = str.find(cardTagEnd)
         if tagOpenIndex > -1 and tagEndIndex > -1 and tagEndIndex > tagOpenIndex:
             allTags.append(str[tagOpenIndex + len(cardTagOpen):tagEndIndex])
-            str = str[:tagEndIndex + len(tagEndIndex)]
+            str = str[:tagEndIndex + len(cardTagEnd)]
         else:
             break
     return allTags
