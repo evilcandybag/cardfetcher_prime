@@ -134,6 +134,9 @@ def parseCardTags(str):
         tagOpenIndex = str.find(cardTagOpen)
         tagEndIndex = str.find(cardTagEnd)
         if tagOpenIndex > -1 and tagEndIndex > -1 and tagEndIndex > tagOpenIndex:
+            logging.info(str)
+            tag = str[tagOpenIndex + len(cardTagOpen):tagEndIndex]
+            logging.info(tag)
             allTags.append(str[tagOpenIndex + len(cardTagOpen):tagEndIndex])
             str = str[:tagEndIndex + len(cardTagEnd)]
         else:
@@ -143,7 +146,6 @@ def parseCardTags(str):
 
 def parseForCardInput(sc, indata):
     if indata.has_key("text"):
-        logging.info("Shit is happening yo")
         userinput = indata["text"].lower()
 
         attachments = ""
