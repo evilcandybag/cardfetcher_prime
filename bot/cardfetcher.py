@@ -2,6 +2,7 @@
 
 import json
 import requests
+import logging
 
 
 def findIndexOfSequence(data, sequence, startindex = 0):
@@ -140,7 +141,7 @@ def parseCardTags(str):
 
 def parseForCardInput(sc, indata):
     if indata.has_key("text"):
-        print("Shit is happening yo")
+        logging.info("Shit is happening yo")
         userinput = indata["text"].lower()
 
         attachments = ""
@@ -148,7 +149,7 @@ def parseForCardInput(sc, indata):
         notFound = "No results found"
 
         allTags = parseCardTags(userinput)
-        print("parsed some tags! %s" % allTags)
+        logging.info("parsed some tags! %s" % allTags)
         if len(allTags) > 0:
             tempText = ""
             tempAttachments = []
