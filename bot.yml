@@ -12,5 +12,11 @@ config:
     info: This is an secret option
     type: secret
     default: not secret though
+    
+  - name: SLACK_TOKEN
+    friendly_name: Slack Token
+    info: This is an secret option
+    type: secret
+    default: not secret though
 screenshots:
   - screenshot: resources/screenshot1.png
