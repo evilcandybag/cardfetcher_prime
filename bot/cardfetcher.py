@@ -130,15 +130,16 @@ def parseCardTags(str):
     
 
     allTags = []
+    remaining = str
     while True:
-        tagOpenIndex = str.find(cardTagOpen)
-        tagEndIndex = str.find(cardTagEnd)
+        tagOpenIndex = remaining.find(cardTagOpen)
+        tagEndIndex = remaining.find(cardTagEnd)
         if tagOpenIndex > -1 and tagEndIndex > -1 and tagEndIndex > tagOpenIndex:
-            logging.info(str)
-            tag = str[tagOpenIndex + len(cardTagOpen):tagEndIndex]
+            logging.info(remaining)
+            tag = remaining[tagOpenIndex + len(cardTagOpen):tagEndIndex]
             logging.info(tag)
-            allTags.append(str[tagOpenIndex + len(cardTagOpen):tagEndIndex])
-            str = str[:tagEndIndex + len(cardTagEnd)]
+            allTags.append(remaining[tagOpenIndex + len(cardTagOpen):tagEndIndex])
+            remaining = remaining[tagEndIndex + len(cardTagEnd):]
         else:
             break
     return allTags
