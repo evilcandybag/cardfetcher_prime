@@ -135,9 +135,7 @@ def parseCardTags(str):
         tagOpenIndex = remaining.find(cardTagOpen)
         tagEndIndex = remaining.find(cardTagEnd)
         if tagOpenIndex > -1 and tagEndIndex > -1 and tagEndIndex > tagOpenIndex:
-            logging.info(remaining)
             tag = remaining[tagOpenIndex + len(cardTagOpen):tagEndIndex]
-            logging.info(tag)
             allTags.append(remaining[tagOpenIndex + len(cardTagOpen):tagEndIndex])
             remaining = remaining[tagEndIndex + len(cardTagEnd):]
         else:
@@ -154,7 +152,6 @@ def parseForCardInput(sc, indata):
         notFound = "No results found"
 
         allTags = parseCardTags(userinput)
-        logging.info("parsed some tags! %s" % allTags)
         if len(allTags) > 0:
             tempText = ""
             tempAttachments = []
