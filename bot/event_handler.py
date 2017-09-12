@@ -40,7 +40,7 @@ class RtmEventHandler(object):
         # Filter out messages from the bot itself, and from non-users (eg. webhooks)
         if ('user' in event) and (not self.clients.is_message_from_me(event['user'])):
             
-            cardfetcher.parseForCardInput(self.clients, event)
+            cardfetcher.parse_for_card_input(self.clients, event)
 
             msg_txt = event['text']
 

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-
-import json
+"""
+Module with a lot of nifty functions for getting card data from the webernet
+"""
 import requests
-import logging
 
 
-def findIndexOfSequence(data, sequence, startindex = 0):
+def find_index_of_sequence(data, sequence, startindex=0):
+    """find the index in a sequence"""
     index = startindex
     for token in sequence:
         index = data.find(token, index)
@@ -14,97 +15,62 @@ def findIndexOfSequence(data, sequence, startindex = 0):
 
     return index + len(sequence[-1])
 
-def getCardValue(cardName, setCode):
-    url = "http://www.mtggoldfish.com/widgets/autocard/%s [%s]" % (cardName, setCode)
+def get_card_value(card_name, set_code):
+    """get the monetary value of a card"""
+    url = "http://www.mtggoldfish.com/widgets/autocard/%s [%s]" % (card_name, set_code)
     headers = {
         'Pragma': 'no-cache',
         'Accept-Encoding': 'gzip, deflate, sdch',
         'Accept-Language': 'en-US,en;q=0.8,de;q=0.6,sv;q=0.4',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.109 Safari/537.36',
-        'Accept': 'text/javascript, application/javascript, application/ecmascript, application/x-ecmascript, */*; q=0.01',
-        'Referer': 'http://www.mtggoldfish.com/widgets/autocard/%s' % cardName,
+        'User-Agent': (
+            'Mozilla/5.0 (Windows NT 6.1; WOW64) '
+            'AppleWebKit/537.36 (KHTML, like Gecko) '
+            'Chrome/48.0.2564.109 Safari/537.36'),
+        'Accept': ('text/javascript, '
+                    'application/javascript, '
+                    'application/ecmascript, '
+                    'application/x-ecmascript, '
+                    '*/*; q=0.01'),
+        'Referer': 'http://www.mtggoldfish.com/widgets/autocard/%s' % card_name,
         'X-Requested-With': 'XMLHttpRequest',
         'Connection': 'keep-alive',
         'Cache-Control': 'no-cache'
     }
     response = requests.get(url, headers=headers)
-    index = findIndexOfSequence(response.content, ["tcgplayer", "btn-shop-price", "$"])
-    endIndex = response.content.find("\\n", index)
+    index = find_index_of_sequence(response.content, ["tcgplayer", "btn-shop-price", "$"])
+    end_index = response.content.find("\\n", index)
     try:
-        value = float(response.content[index+2:endIndex].replace(",", ""))
+        value = float(response.content[index+2:end_index].replace(",", ""))
     except ValueError:
         value = 0
 
     return value
 
-def getCard(name):
-    queryUrl = "http://api.deckbrew.com/mtg/cards?name=%s" % name
-    print(queryUrl)
-    r = requests.get(queryUrl)
+def get_card(name):
+    """fetch a card with the given name"""
+    query_url = "http://api.deckbrew.com/mtg/cards?name=%s" % name
+    print(query_url)
+    r = requests.get(query_url)
     cards = r.json()
 
     if len(cards) < 1:
         return None
 
     card = cards[0]
-    bestMatch = None
-    for cardIter in cards:
-        pos = cardIter["name"].lower().find(name)
-        if bestMatch is None or (pos != -1 and pos < bestMatch):
-            bestMatch = pos
-            card = cardIter
+    best_match = None
+    for card_iter in cards:
+        pos = card_iter["name"].lower().find(name)
+        if best_match is None or (pos != -1 and pos < best_match):
+            best_match = pos
+            card = card_iter
 
-    mostRecent = card["editions"][0]
-    card["value"] = getCardValue(card["name"], mostRecent["set_id"])
+    most_recent = card["editions"][0]
+    card["value"] = get_card_value(card["name"], most_recent["set_id"])
 
     return card
 
-def getPlaneswalker(dciNumber):
-    url = "http://www.wizards.com/Magic/PlaneswalkerPoints/JavaScript/GetPointsHistoryModal"
-    headers = {
-        'Pragma': 'no-cache',
-        'Origin': 'http://www.wizards.com',
-        'Accept-Encoding': 'gzip, deflate',
-        'Accept-Language': 'en-US,en;q=0.8,de;q=0.6,sv;q=0.4',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.109 Safari/537.36',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'Accept': '*/*',
-        'Cache-Control': 'no-cache',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Cookie': 'f5_cspm=1234; BIGipServerWWWPWPPOOL01=353569034.20480.0000; __utmt=1; BIGipServerWWWPool1=3792701706.20480.0000; PlaneswalkerPointsSettings=0=0&lastviewed=9212399887; __utma=75931667.1475261136.1456488297.1456488297.1456488297.1; __utmb=75931667.5.10.1456488297; __utmc=75931667; __utmz=75931667.1456488297.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)',
-        'Connection': 'keep-alive',
-        'Referer': 'http://www.wizards.com/Magic/PlaneswalkerPoints/%s' % dciNumber
-    }
-    data = {"Parameters":{"DCINumber":dciNumber,"SelectedType":"Yearly"}}
-    response = requests.post(url, headers=headers, data=json.dumps(data))
-
-    seasons = []
-
-    responseData = json.loads(response.content)
-    markup = responseData["ModalContent"]
-    searchPosition = markup.find("SeasonRange")
-
-    while searchPosition != -1:
-        pointsvalue = "PointsValue\">"
-        searchPosition = markup.find(pointsvalue, searchPosition)
-        searchPosition += len(pointsvalue)
-        endPosition = markup.find("</div>", searchPosition)
-        if endPosition != -1:
-            value = markup[searchPosition:endPosition]
-            seasons.append(int(value))
-        searchPosition = markup.find("SeasonRange", searchPosition)
-
-    return {"currentSeason": seasons[0], "lastSeason": seasons[1]}
-
-def getPlaneswalkerByes(walker):
-    if walker["currentSeason"] >= 2250 or walker["lastSeason"] >= 2250:
-        return 2
-    elif walker["currentSeason"] >= 1300 or walker["lastSeason"] >= 1300:
-        return 1
-
-    return 0
-
-def emojiFilter(indata):
+def emoji_filter(indata):
+    """add mana symbols as emoji tags to a message"""
     ret = indata.replace("{", ":_")
     ret = ret.replace("}", "_:")
     lastpos = None
@@ -119,65 +85,70 @@ def emojiFilter(indata):
 
     return ret
 
-def parseCardTags(str):
-    bangTrigger = "!card "
-    cardTagOpen = "[["
-    cardTagEnd = "]]"
+def parse_card_tags(indata):
+    """parse a string and return all tags contained within"""
+    bang_trigger = "!card "
+    card_tag_open = "[["
+    card_tag_end = "]]"
 
-    triggerIndex = str.find(bangTrigger)
-    if triggerIndex > -1:
-        return [str[triggerIndex + len(bangTrigger):]]
-    
+    trigger_index = indata.find(bang_trigger)
+    if trigger_index > -1:
+        return [indata[trigger_index + len(bang_trigger):]]
 
-    allTags = []
-    remaining = str
+    all_tags = []
+    remaining = indata
     while True:
-        tagOpenIndex = remaining.find(cardTagOpen)
-        tagEndIndex = remaining.find(cardTagEnd)
-        if tagOpenIndex > -1 and tagEndIndex > -1 and tagEndIndex > tagOpenIndex:
-            tag = remaining[tagOpenIndex + len(cardTagOpen):tagEndIndex]
-            allTags.append(remaining[tagOpenIndex + len(cardTagOpen):tagEndIndex])
-            remaining = remaining[tagEndIndex + len(cardTagEnd):]
+        tag_open_index = remaining.find(card_tag_open)
+        tag_end_index = remaining.find(card_tag_end)
+        if tag_open_index > -1 and tag_end_index > -1 and tag_end_index > tag_open_index:
+            tag = remaining[tag_open_index + len(card_tag_open):tag_end_index]
+            all_tags.append(tag)
+            remaining = remaining[tag_end_index + len(card_tag_end):]
         else:
             break
-    return allTags
+    return all_tags
 
 
-def parseForCardInput(sc, indata):
+
+ORACLE_TRIGGER = "!oracle "
+PRICE_TRIGGER = "!price "
+CR_TRIGGER = "!cr "
+
+def parse_for_card_input(slack_client, indata):
+    """parse a user message and output something to the supplied slack client"""
     if indata.has_key("text"):
         userinput = indata["text"].lower()
 
         attachments = ""
         text = ""
-        notFound = "No results found"
+        not_found = "No results found"
 
-        allTags = parseCardTags(userinput)
-        if len(allTags) > 0:
-            tempText = ""
-            tempAttachments = []
-            for searchTerm in allTags:
-                card = getCard(searchTerm)
+        all_tags = parse_card_tags(userinput)
+        if all_tags: #false if empty
+            temp_text = ""
+            temp_attachments = []
+            for search_term in all_tags:
+                card = get_card(search_term)
                 if not card:
-                    tempText += "No result for %s\n" % searchTerm
+                    temp_text += "No result for %s\n" % search_term
                 else:
-                    mostRecentPrinting = card["editions"][0]
-                    header = "Latest printing for %s is %s\n" % (card["name"], mostRecentPrinting["set"])
-                    tempAttachments.append('{"image_url":"%s","title":"%s"}' 
-                      % (mostRecentPrinting["image_url"], card["name"].replace("\"", "\\\"")))
-                    tempText += header
-            
-            text += tempText
-            attachments += "[%s]" % (",".join(tempAttachments))
-            
+                    most_recent_printing = card["editions"][0]
+                    header = "Latest printing for %s is %s\n" % (
+                        card["name"], most_recent_printing["set"])
+                    temp_attachments.append('{"image_url":"%s","title":"%s"}'% (
+                        most_recent_printing["image_url"], card["name"].replace("\"", "\\\"")))
+                    temp_text += header
 
-        oracleTrigger = "!oracle "
-        if userinput.find(oracleTrigger) > -1:
-            searchTerm = userinput[userinput.find(oracleTrigger) + len(oracleTrigger):]
-            card = getCard(searchTerm)
+            text += temp_text
+            attachments += "[%s]" % (",".join(temp_attachments))
+
+        if userinput.find(ORACLE_TRIGGER) > -1:
+            search_term = userinput[userinput.find(ORACLE_TRIGGER) + len(ORACLE_TRIGGER):]
+            card = get_card(search_term)
             if not card:
-                text += notFound
+                text += not_found
             else:
-                mostRecentPrinting = card["editions"][0]
+                most_recent_printing = card["editions"][0]
                 typeline = ""
                 if card.has_key("supertypes"):
                     for supertype in card["supertypes"]:
@@ -190,77 +161,75 @@ def parseForCardInput(sc, indata):
                 if card.has_key("subtypes"):
                     for subtype in card["subtypes"]:
                         typeline += subtype.capitalize() + " "
-                answer = "%s\t\t%s\n%s\n%s" % (card["name"], emojiFilter(card["cost"]), typeline, emojiFilter(card["text"]))
+
+                answer = "%s\t\t%s\n%s\n%s" % (
+                    card["name"],
+                    emoji_filter(card["cost"]),
+                    typeline, emoji_filter(card["text"]))
+
                 valueinfo = ""
                 if card.has_key("power") and card.has_key("toughness"):
                     answer += "\n*`%s/%s`*" % (card["power"], card["toughness"])
                 if card["value"] > 0:
-                    valueinfo = "\n\nCurrent market price for most recent printing (%s) - $%.1f" % (mostRecentPrinting["set"], card["value"])
+                    valueinfo = "\n\nCurrent market price for most recent printing (%s) - $%.1f" % (
+                        most_recent_printing["set"], card["value"])
 
                 answer += valueinfo
                 text += answer
 
-        priceTrigger = "!price "
-        if userinput.find(priceTrigger) > -1:
-            searchTerm = userinput[userinput.find(priceTrigger) + len(priceTrigger):]
-            card = getCard(searchTerm)
+        if userinput.find(PRICE_TRIGGER) > -1:
+            search_term = userinput[userinput.find(PRICE_TRIGGER) + len(PRICE_TRIGGER):]
+            card = get_card(search_term)
             if not card:
-                text += notFound
+                text += not_found
             else:
-                mostRecentPrinting = card["editions"][0]
+                most_recent_printing = card["editions"][0]
                 answer = "Unable to find price information for %s" % card["name"]
                 if card["value"] > 0:
-                    answer = "Current market price for most recent printing of %s (%s) - $%.1f" % (card["name"], mostRecentPrinting["set"], card["value"])
+                    answer = "Current market price for most recent printing of %s (%s) - $%.1f" % (
+                        card["name"],
+                        most_recent_printing["set"],
+                        card["value"])
 
                 text += answer
 
-        pwpTrigger = "!pwp "
-        if userinput.find(pwpTrigger) > -1:
-            searchTerm = userinput[userinput.find(pwpTrigger) + len(pwpTrigger):]
-            planeswalker = getPlaneswalker(searchTerm)
-            answer = "DCI# %s has %s points in the current season, %s points last season\nCurrently " % (searchTerm, planeswalker["currentSeason"], planeswalker["lastSeason"])
-            byes = getPlaneswalkerByes(planeswalker)
-            if not byes:
-                answer += "not eligible for GP byes"
-            else:
-                answer += "eligible for %d GP byes" % byes
-
-            text += answer
-
-        crTrigger = "!cr "
-        if userinput.find(crTrigger) > -1:
-            searchTerm = userinput[userinput.find(crTrigger) + len(crTrigger):]
-            rule = getRule(searchTerm)
+        if userinput.find(CR_TRIGGER) > -1:
+            search_term = userinput[userinput.find(CR_TRIGGER) + len(CR_TRIGGER):]
+            rule = get_rule(search_term)
             if rule:
-                answer = "%s - %s" % (searchTerm, rule)
+                answer = "%s - %s" % (search_term, rule)
             else:
                 answer = "No result found"
             text += answer
 
         if text or attachments:
-            sc.rtm.api_call(
+            slack_client.rtm.api_call(
                 "chat.postMessage",
                 channel=indata["channel"],
                 attachments=attachments,
                 text=text,
                 as_user=True)
 
-compRulesUrl = "http://media.wizards.com/2016/docs/MagicCompRules_04082016.txt"
-compRulesLookup = {}
+COMP_RULES_URL = "http://media.wizards.com/2016/docs/MagicCompRules_04082016.txt"
+COMP_RULES_LOOKUP = {}
 
-def getCompRules():
-    r = requests.get(compRulesUrl)
-    rules = r.text.encode("utf-8")
+
+def get_comp_rules():
+    """ Get cached competition rules"""
+    response = requests.get(COMP_RULES_URL)
+    rules = response.text.encode("utf-8")
     for rule in rules.split("\n"):
-        compRulesLookup[rule.split(" ")[0]] = (" ".join(rule.split(" ")[1:])).decode("Windows.1252").replace(u"Â","")
-    return compRulesLookup
+        COMP_RULES_LOOKUP[rule.split(" ")[0]] = (
+            " ".join(rule.split(" ")[1:])).decode("Windows.1252").replace(u"Â", "")
+    return COMP_RULES_LOOKUP
 
-def getRule(ruleKey):
-    if ruleKey not in compRulesLookup:
-        if ruleKey[-1:] == ".":
-            ruleKey = ruleKey[:-1]
-    if ruleKey not in compRulesLookup:
-        ruleKey += "."
-    if ruleKey not in compRulesLookup:
+def get_rule(rule_key):
+    """get the rule with the given key"""
+    if rule_key not in COMP_RULES_LOOKUP:
+        if rule_key[-1:] == ".":
+            rule_key = rule_key[:-1]
+    if rule_key not in COMP_RULES_LOOKUP:
+        rule_key += "."
+    if rule_key not in COMP_RULES_LOOKUP:
         return None
-    return compRulesLookup[ruleKey]
+    return COMP_RULES_LOOKUP[rule_key]
