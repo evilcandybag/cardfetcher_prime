@@ -4,8 +4,8 @@ import json
 import requests
 
 
-def findIndexOfSequence(data, sequence, startIndex = 0):
-    index = startIndex
+def findIndexOfSequence(data, sequence, startindex = 0):
+    index = startindex
     for token in sequence:
         index = data.find(token, index)
         if index == -1:
@@ -103,8 +103,8 @@ def getPlaneswalkerByes(walker):
 
     return 0
 
-def emojiFilter(input):
-    ret = input.replace("{", ":_")
+def emojiFilter(indata):
+    ret = indata.replace("{", ":_")
     ret = ret.replace("}", "_:")
     lastpos = None
     while ret.rfind(":_", 0, lastpos) != -1:
@@ -118,9 +118,9 @@ def emojiFilter(input):
 
     return ret
 
-def parseForCardInput(input):
-    if input.has_key("text"):
-        userinput = input["text"].lower()
+def parseForCardInput(sc, indata):
+    if indata.has_key("text"):
+        userinput = indata["text"].lower()
 
         cardTrigger = "!card "
         attachments = ""
@@ -211,7 +211,7 @@ def parseForCardInput(input):
         if text or attachments:
             sc.api_call(
                 "chat.postMessage",
-                channel=input["channel"],
+                channel=indata["channel"],
                 attachments=attachments,
                 text=text,
                 as_user=True)
