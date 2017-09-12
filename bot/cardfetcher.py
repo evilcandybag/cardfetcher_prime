@@ -128,12 +128,14 @@ def parseCardTags(str):
     if triggerIndex > -1:
         return [str[triggerIndex + len(bangTrigger):]]
     
+
     allTags = []
     while True:
         tagOpenIndex = str.find(cardTagOpen)
         tagEndIndex = str.find(cardTagEnd)
         if tagOpenIndex > -1 and tagEndIndex > -1 and tagEndIndex > tagOpenIndex:
             allTags.append(str[tagOpenIndex + len(cardTagOpen):tagEndIndex])
+            str = str[:tagEndIndex + len(tagEndIndex)]
         else:
             break
     return allTags
